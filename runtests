@@ -57,26 +57,26 @@ function run {
     if [ ! -z "$*" ]; then
 	echo "Not checking for required coverage in custom mode."
     fi
-    check "$__code_tests"
-    check "$__code_cov"
+    check "$__code_tests" "tests"
+    check "$__code_cov"   "coverage"
 }
 
 function check {
     case "$1" in
 	0)
-	    echo "All tests pass."
+	    echo "SUCCESS: ($2) All tests pass."
 	    ;;
 	1)
-	    echo "ERROR: tests failed."
-	;;
+	    echo "ERROR: ($2) tests failed."
+	    ;;
 	2)
-	    echo "ERROR: insufficient coverage."
+	    echo "ERROR: ($2) insufficient coverage."
 	    ;;
 	3)
-	    echo "ERROR: tests failed, and insufficient coverage."
+	    echo "ERROR: ($2) tests failed, and insufficient coverage."
 	    ;;
 	*)
-	    echo "ERROR: unknown error code: $1"
+	    echo "ERROR: ($2) unknown error code: $1"
 	    ;;
     esac
 }
@@ -100,8 +100,8 @@ fi
 echo
 echo "*** Summary ***"
 echo "Python 2.7:"
-check "$code2"
+check "$code2" "summary"
 echo "Python 3.x"
-check "$code3"
+check "$code3" "summary"
 
 exit "$code"
