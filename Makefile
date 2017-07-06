@@ -34,4 +34,4 @@ pristine: clean pristine-python
 	@echo "Everything is pristine clean."
 
 pristine-python:
-	rm -rf python/env2 python/env3
+	rm -rf env2 env3 build dist

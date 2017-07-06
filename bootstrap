@@ -39,30 +39,38 @@ function search_python3 {
     done
 }
 
-if [ ! -d env2 ]; then
-    if ! which virtualenv > /dev/null; then
-	echo "  WARNING: Couldn't find virtualenv installation."
-	echo "  Python 2.7 env2 will not be created"
-    else
-	virtualenv env2
-    fi
-else
-    echo "Reusing the existing env2"
-fi
-if [ -d env2 ]; then
-    (source env2/bin/activate; pip install -U pip; pip install -r pip2.deps; deactivate)
-fi
+function setup_env2 {
 
-if [ ! -d env3 ]; then
-    search_python3 PYTHON3
-    if [ -z "$PYTHON3" ]; then
-	echo "  WARNING: Couldn't find Python 3 installation."
+    if [ ! -d env2 ]; then
+	if ! which virtualenv > /dev/null; then
+	    echo "  WARNING: Couldn't find virtualenv installation."
+	    echo "  Python 2.7 env2 will not be created"
+	else
+	    virtualenv env2
+	fi
     else
-	"$PYTHON3" -m venv env3
+	echo "Reusing the existing env2"
     fi
-else
-    echo "Reusing the existing env3"
-fi
-if [ -d env3 ]; then
-    (source env3/bin/activate; pip install -U pip; pip install -r pip3.deps; deactivate)
-fi
+    if [ -d env2 ]; then
+	(source env2/bin/activate; pip install -U pip; pip install -r pip2.deps; deactivate)
+    fi
+}
+
+function setup_env3 {
+    if [ ! -d env3 ]; then
+	search_python3 PYTHON3
+	if [ -z "$PYTHON3" ]; then
+	    echo "  WARNING: Couldn't find Python 3 installation."
+	else
+	    "$PYTHON3" -m venv env3
+	fi
+    else
+	echo "Reusing the existing env3"
+    fi
+    if [ -d env3 ]; then
+	(source env3/bin/activate; pip install -U pip; pip install -r pip3.deps; deactivate)
+    fi
+}
+
+setup_env2
+setup_env3
