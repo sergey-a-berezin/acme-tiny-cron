@@ -1,6 +1,6 @@
 [run]
 source =
-    acme-tiny-cron
+    acme_tiny_cron
 include = ./*
 branch = True
 
