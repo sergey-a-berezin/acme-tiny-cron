@@ -1,0 +1,107 @@
+#!/bin/bash
+# Copyright 2017 Sergey Berezin
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+cd "$DIR"
+
+source runtests_common.sh
+
+# Run tests and return the return code: 0 on success, 1 if tests fail,
+# 2 if coverage is insufficient.
+function run {
+    local __retval="$1"; shift
+
+    local pyversion=`python -c 'import sys; print(sys.version_info.major)'`
+    local htmldir="${DIR}/htmlcov${pyversion}"
+    local config="${DIR}/.coveragerc${pyversion}"
+
+    coverage erase
+    rm -rf "$htmldir"
+
+    local __code_tests="0"
+
+    if [ ! -z "$*" ]; then
+	coverage run --rcfile="$config" -a "$@"
+	__code_tests="$?"
+    else
+	local __dirs=
+	local __files=()
+	dirs_to_search __dirs
+	for d in "${__dirs[@]}"; do
+	    __files=("${__files[@]}" `find "$d" -name "*_test.py"`)
+	done
+	for f in "${__files[@]}"; do
+	    echo "Running tests in '$f'"
+	    coverage run --rcfile="$config" -a "$f"
+	    __code_tests=`python -c "print(max($__code_tests, $?))"`
+	done
+    fi
+    coverage report --rcfile="$config"
+    coverage html --rcfile="$config" -d "$htmldir"
+    local __code_cov="$?"
+    local __code=$(($__code_tests + $__code_cov))
+    eval $__retval="'$__code'"
+    echo "Detailed coverage report is in ${htmldir}"
+    if [ ! -z "$*" ]; then
+	echo "Not checking for required coverage in custom mode."
+    fi
+    check "$__code_tests"
+    check "$__code_cov"
+}
+
+function check {
+    case "$1" in
+	0)
+	    echo "All tests pass."
+	    ;;
+	1)
+	    echo "ERROR: tests failed."
+	;;
+	2)
+	    echo "ERROR: insufficient coverage."
+	    ;;
+	3)
+	    echo "ERROR: tests failed, and insufficient coverage."
+	    ;;
+	*)
+	    echo "ERROR: unknown error code: $1"
+	    ;;
+    esac
+}
+
+echo "************* Python 2.7 ******************"
+source env2/bin/activate
+run code2 "$@"
+deactivate
+
+echo "************* Python 3.x ******************"
+source env3/bin/activate
+run code3 "$@"
+deactivate
+
+if [ "$code2" -gt "$code3" ]; then
+    code="$code2"
+else
+    code="$code3"
+fi
+
+echo
+echo "*** Summary ***"
+echo "Python 2.7:"
+check "$code2"
+echo "Python 3.x"
+check "$code3"
+
+exit "$code"
