@@ -12,5 +12,45 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-def run():
-  return 1
+"""A cron job for renewing SSL certificates."""
+
+import argparse
+from cryptography import x509
+from cryptography.hazmat.backends import default_backend
+import datetime
+from google import protobuf
+import sys
+
+from protos import domains_pb2
+
+
+def parse_args(argv):
+  parser = argparse.ArgumentParser(description=sys.modules['__main__'].__doc__)
+  parser.add_argument('config', help='Absolute path to configuration file.')
+  return parser.parse_args(argv)
+
+
+def read_cert(cert_file):
+  with open(cert_file) as f:
+    pem_data = f.read().encode('utf-8')
+  return x509.load_pem_x509_certificate(pem_data, default_backend())
+
+
+def is_cert_valid(cert, dt):
+  """Check if `cert` is valid at `dt` (datetime in UTC)."""
+  return cert.not_valid_before < dt and dt < cert.not_valid_after
+
+
+def need_renew(cert, days_to_renew, now):
+  min_valid_date = now + datetime.timedelta(days=days_to_renew)
+  return not (is_cert_valid(cert, now) and is_cert_valid(cert, min_valid_date))
+
+
+def read_config(config):
+  pass
+
+
+def run(argv):  # pragma: no cover
+  args = parse_args(argv)
+  config = read_config(args.config)
+  now = datetime.datetime.utcnow()

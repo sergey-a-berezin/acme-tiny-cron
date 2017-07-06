@@ -18,4 +18,4 @@ import sys
 import acme_tiny_cron
 
 if __name__ == '__main__':
-  sys.exit(acme_tiny_cron.run())
+  sys.exit(acme_tiny_cron.run(sys.argv))
