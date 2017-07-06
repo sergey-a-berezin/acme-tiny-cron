@@ -36,7 +36,7 @@ pip-log.txt
 pip-delete-this-directory.txt
 
 # Unit test / coverage reports
-htmlcov/
+htmlcov*/
 .tox/
 .coverage
 .coverage.*
@@ -99,3 +99,6 @@ ENV/
 
 # mypy
 .mypy_cache/
+
+# Emacs / VIM backup files
+*~

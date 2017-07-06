@@ -1,0 +1,31 @@
+[run]
+source =
+    acme-tiny-cron
+include = ./*
+branch = True
+
+[report]
+# Report coverage to .1% accuracy.
+precision = 1
+# Expected coverage percentage. We strive for 100% coverage in python.
+fail_under = 100
+# skip_covered = True
+show_missing = True
+exclude_lines =
+    # Have to re-enable the standard pragma
+    pragma: no cover
+    pragma3: no cover
+
+    # Don't complain about missing debug-only code:
+    def __repr__
+
+    # Don't complain if tests don't hit defensive assertion code:
+    raise AssertionError
+    raise NotImplementedError
+
+    # Don't complain if non-runnable code isn't run:
+    if 0:
+    if __name__ == ['"]__main__['"]:
+partial_branches =
+    pragma: no branch
+    pragma3: no branch
