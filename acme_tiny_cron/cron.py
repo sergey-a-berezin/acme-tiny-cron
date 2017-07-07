@@ -29,6 +29,9 @@ from google import protobuf
 from protos import domains_pb2
 
 
+DEFAULT_DAYS_TO_RENEW = 30
+
+
 def parse_args(argv):
   parser = argparse.ArgumentParser(description=sys.modules['__main__'].__doc__)
   parser.add_argument('config', help='Absolute path to configuration file.')
@@ -117,9 +120,12 @@ def issue_cert(domain, account_key, staging_server, prod_server, now):
   return False
 
 
-def process_cert(domain, account_key, now):
-  if need_renew(read_cert(domain.cert_path)):
-    return issue_cert(domain, account_key, now)
+def process_cert(domain, account_key, staging_server, prod_server, now):
+  days_to_renew = domain.renew_days_before_expiration
+  if not days_to_renew:
+    days_to_renew = DEFAULT_DAYS_TO_RENEW
+  if need_renew(read_cert(domain.cert_path), days_to_renew, now):
+    return issue_cert(domain, account_key, staging_server, prod_server, now)
   return False
 
 
