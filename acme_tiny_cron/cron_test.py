@@ -59,32 +59,45 @@ hP5qtmfmmdOvRwNUFnQLWo0=
 -----END CERTIFICATE-----
 """
 
-TEST_CONFIG = """\
-staging_server: "https://staging/"
-production_server: "https://production/"
-account_private_key_path: "/path/to/account.key"
-log_path: "/path/to/acme.log"
-domain: {
-  name: "first.com"
-  mode: STAGING
-  csr_path: "/path/to/first.com/request.csr"
-  private_key_path: "/path/to/first.com/private.key"
-  cert_path: "/path/to/first.com/cert.crt"
-  renew_days_before_expiration: 7
-  acme_challenge_path: "/path/to/first.com/.well-known/acme-challenge"
-}
+def get_config_text(domains=None):
+  config_text = """\
+    staging_server: "https://staging/"
+    production_server: "https://production/"
+    account_private_key_path: "/path/to/account.key"
+    log_path: "/path/to/acme.log"
+  """
+  for domain in domains or []:
+    config_text += 'domain: {\n' + domain + '\n}\n'
+  return config_text
 
-domain: {
-  name: "second.com"
-  mode: PRODUCTION
-  csr_path: "/path/to/second.com/request.csr"
-  private_key_path: "/path/to/second.com/private.key"
-  cert_path: "/path/to/second.com/cert.crt"
-  renew_days_before_expiration: 30
-  acme_challenge_path: "/path/to/second.com/.well-known/acme-challenge"
-}
-"""
 
+def get_config_proto(config_text):
+  config = domains_pb2.Domains()
+  protobuf.text_format.Merge(config_text, config)
+  return config
+
+
+def get_domain_text(cert_path='/path/to/cert.crt', mode='STAGING', days=None):
+  domain = domains_pb2.Domain()
+  days_to_renew = ''
+  if days:
+    days_to_renew = 'renew_days_before_expiration: {}'.format(days)
+  domain_text = """\
+      mode: {mode}
+      csr_path: "test_request.csr"
+      private_key_path: "test_private.key"
+      cert_path: "{cert_path}"
+      acme_challenge_path: "test_acme_dir"
+      {days_to_renew}
+  """.format(cert_path=cert_path, mode=mode, days_to_renew=days_to_renew)
+  return domain_text
+
+
+def get_domain_proto(cert_path='/path/to/cert.crt', mode='STAGING', days=None):
+  text = get_domain_text(cert_path, mode, days)
+  domain = domains_pb2.Domain()
+  protobuf.text_format.Merge(text, domain)
+  return domain
 
 
 def add_time(dt, days=0, seconds=0):
@@ -101,9 +114,6 @@ class TestCron(unittest.TestCase):
       f.write(TEST_CERT)
     self.not_valid_before = datetime.datetime(2017, 7, 6, 20, 50, 43)
     self.not_valid_after = datetime.datetime(2017, 10, 4, 20, 50, 43)
-    self.config_file = os.path.join(self.tempdir, 'domains.cfg')
-    with open(self.config_file, 'w') as f:
-      f.write(TEST_CONFIG)
 
   def tearDown(self):
     shutil.rmtree(self.tempdir, ignore_errors=True)
@@ -154,22 +164,16 @@ class TestCron(unittest.TestCase):
     self.assertTrue(cron.need_renew(cert, 30, now=self.not_valid_after))
 
   def test_read_config(self):
-    config = cron.read_config(self.config_file)
+    config_file = os.path.join(self.tempdir, 'domains.cfg')
+    with open(config_file, 'w') as f:
+      f.write(get_config_text([get_domain_text(), get_domain_text(mode='PRODUCTION')]))
+    config = cron.read_config(config_file)
 
   @mock.patch('cron.call_acme_tiny', autospec=True)
   def test_issue_cert_success(self, mock_cat):
     mock_cat.return_value = 'TEST CERT'
-    domain = domains_pb2.Domain()
     cert_file = os.path.join(self.tempdir, 'new_cert.crt')
-    domain_text = """\
-        mode: STAGING
-        csr_path: "test_request.csr"
-        private_key_path: "test_private.key"
-        cert_path: "{cert_path}"
-        acme_challenge_path: "test_acme_dir"
-    """.format(cert_path=cert_file)
-
-    protobuf.text_format.Merge(domain_text, domain)
+    domain = get_domain_proto(cert_path=cert_file, mode='STAGING')
 
     self.assertFalse(os.path.isfile(cert_file))
     res = cron.issue_cert(domain, 'test_account.key', 'https://test_staging',
@@ -186,17 +190,8 @@ class TestCron(unittest.TestCase):
   @mock.patch('cron.call_acme_tiny', autospec=True)
   def test_issue_cert_failure(self, mock_cat):
     mock_cat.return_value = None
-    domain = domains_pb2.Domain()
     cert_file = os.path.join(self.tempdir, 'new_cert.crt')
-    domain_text = """\
-        mode: PRODUCTION
-        csr_path: "test_request.csr"
-        private_key_path: "test_private.key"
-        cert_path: "{cert_path}"
-        acme_challenge_path: "test_acme_dir"
-    """.format(cert_path=cert_file)
-
-    protobuf.text_format.Merge(domain_text, domain)
+    domain = get_domain_proto(cert_path=cert_file, mode='PRODUCTION')
 
     self.assertFalse(os.path.isfile(cert_file))
     res = cron.issue_cert(domain, 'test_account.key', 'https://test_staging',
@@ -208,6 +203,62 @@ class TestCron(unittest.TestCase):
       '--acme-dir', 'test_acme_dir',
       '--ca', 'https://test_prod'])
     self.assertFalse(os.path.isfile(cert_file))
+
+  @mock.patch('cron.call_acme_tiny', autospec=True)
+  def test_process_cert(self, mock_cat):
+    mock_cat.return_value = 'NEW CERT'
+    domain = get_domain_proto(cert_path=self.cert_file, mode='PRODUCTION')
+    # Too early to renew.
+    self.assertFalse(cron.process_cert(
+        domain, 'test_account.key', 'test_staging', 'test_prod',
+        add_time(self.not_valid_before, days=1)))
+
+    self.assertEqual(mock_cat.call_count, 0)
+
+    # Branch coverage: supply alternative days before expiration.
+    domain = get_domain_proto(cert_path=self.cert_file, mode='PRODUCTION', days=10)
+    self.assertFalse(cron.process_cert(
+        domain, 'test_account.key', 'test_staging', 'test_prod',
+        add_time(self.not_valid_before, days=1)))
+
+    self.assertEqual(mock_cat.call_count, 0)
+
+    # Successfully renews.
+    self.assertTrue(cron.process_cert(
+        domain, 'test_account.key', 'test_staging', 'test_prod', self.not_valid_after))
+    mock_cat.assert_called_once_with([
+      '--account-key', 'test_account.key',
+      '--csr', 'test_request.csr',
+      '--acme-dir', 'test_acme_dir',
+      '--ca', 'test_prod'])
+    with open(self.cert_file) as f:
+      cert = f.read()
+    self.assertEqual(cert, 'NEW CERT')
+
+
+  @mock.patch('cron.call_acme_tiny', autospec=True)
+  def test_process_certs_up_to_date(self, mock_cat):
+    config = get_config_proto(get_config_text([
+        get_domain_text(cert_path=self.cert_file, mode='PRODUCTION', days=10),
+        get_domain_text(cert_path=self.cert_file, mode='STAGING'),
+    ]))
+    self.assertFalse(cron.process_certs(config, add_time(self.not_valid_before, days=1)))
+    self.assertEqual(mock_cat.call_count, 0)
+
+  @mock.patch('cron.call_acme_tiny', autospec=True)
+  def test_process_certs_renew(self, mock_cat):
+    config = get_config_proto(get_config_text([
+        get_domain_text(cert_path=self.cert_file, mode='PRODUCTION', days=10),
+        get_domain_text(cert_path=self.cert_file, mode='STAGING'),
+    ]))
+    mock_cat.side_effect = ['TEST CERT', 'SHOULD NOT BE USED']
+    # Expect only STAGING cert to be renewed (default 30 days before expiration).
+    self.assertTrue(cron.process_certs(
+        config, add_time(self.not_valid_after, days=-29)))
+    self.assertEqual(mock_cat.call_count, 1)
+    with open(self.cert_file) as f:
+      new_cert = f.read()
+    self.assertEqual(new_cert, 'TEST CERT')
 
 
 if __name__ == '__main__':
