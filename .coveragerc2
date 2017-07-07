@@ -1,7 +1,7 @@
 [run]
 source =
     acme_tiny_cron
-include = ./*
+include = acme_tiny_cron/*
 branch = True
 
 [report]

@@ -14,7 +14,7 @@
 
 # Common bash functions for running and listing tests.
 
-declare -a skip_dirs=("env2" "env3" "htmlcov2" "htmlcov3" "experimental" "luci-py")
+declare -a skip_dirs=("env2" "env3" "htmlcov2" "htmlcov3" "build" "dist")
 
 function dirs_to_search {
     local __retval="$1"

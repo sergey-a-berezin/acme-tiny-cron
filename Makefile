@@ -28,10 +28,10 @@ init:
 
 clean:
 	find . -name "*.pyc" -delete
-	rm -rf htmlcov2 htmlcov3 .coverage
+	rm -rf htmlcov2 htmlcov3 .coverage build dist
 
 pristine: clean pristine-python
 	@echo "Everything is pristine clean."
 
 pristine-python:
-	rm -rf env2 env3 build dist
+	rm -rf env2 env3
