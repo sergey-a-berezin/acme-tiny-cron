@@ -14,12 +14,20 @@
 # limitations under the License.
 
 import datetime
+import logging
+try:  # pragma2: no cover
+  from unittest import mock
+except ImportError:  # pragma3: no cover
+  import mock
 import os
 import shutil
 import tempfile
 import unittest
 
+from google import protobuf
+
 import cron
+from protos import domains_pb2
 
 
 # A self-signed test certificate for `snakeoil.com` valid from
@@ -51,6 +59,33 @@ hP5qtmfmmdOvRwNUFnQLWo0=
 -----END CERTIFICATE-----
 """
 
+TEST_CONFIG = """\
+staging_server: "https://staging/"
+production_server: "https://production/"
+account_private_key_path: "/path/to/account.key"
+log_path: "/path/to/acme.log"
+domain: {
+  name: "first.com"
+  mode: STAGING
+  csr_path: "/path/to/first.com/request.csr"
+  private_key_path: "/path/to/first.com/private.key"
+  cert_path: "/path/to/first.com/cert.crt"
+  renew_days_before_expiration: 7
+  acme_challenge_path: "/path/to/first.com/.well-known/acme-challenge"
+}
+
+domain: {
+  name: "second.com"
+  mode: PRODUCTION
+  csr_path: "/path/to/second.com/request.csr"
+  private_key_path: "/path/to/second.com/private.key"
+  cert_path: "/path/to/second.com/cert.crt"
+  renew_days_before_expiration: 30
+  acme_challenge_path: "/path/to/second.com/.well-known/acme-challenge"
+}
+"""
+
+
 
 def add_time(dt, days=0, seconds=0):
   """Add `days` to `dt` (datetime)."""
@@ -66,6 +101,9 @@ class TestCron(unittest.TestCase):
       f.write(TEST_CERT)
     self.not_valid_before = datetime.datetime(2017, 7, 6, 20, 50, 43)
     self.not_valid_after = datetime.datetime(2017, 10, 4, 20, 50, 43)
+    self.config_file = os.path.join(self.tempdir, 'domains.cfg')
+    with open(self.config_file, 'w') as f:
+      f.write(TEST_CONFIG)
 
   def tearDown(self):
     shutil.rmtree(self.tempdir, ignore_errors=True)
@@ -73,6 +111,21 @@ class TestCron(unittest.TestCase):
   def test_parse_args(self):
     args = cron.parse_args(['/foo/bar/baz'])
     self.assertEqual(args.config, '/foo/bar/baz')
+
+  def test_setup_logging(self):
+    logger = logging.getLogger('test')
+    log_file = os.path.join(self.tempdir, 'test.log')
+    cron.setup_logging(log_file, logger=logger)
+    logger.info('This is a test')
+    with open(log_file) as f:
+      loglines = f.readlines()
+    self.assertIn('This is a test', loglines[0].strip())
+
+  def test_read_cert(self):
+    # Smoke test: reading a valid cert must not crash.
+    _ = cron.read_cert(self.cert_file)
+    # Reading a non-existent cert.
+    self.assertIsNone(cron.read_cert('/does/not/exist'))
 
   def test_is_cert_valid(self):
     cert = cron.read_cert(self.cert_file)
@@ -83,6 +136,8 @@ class TestCron(unittest.TestCase):
     self.assertFalse(cron.is_cert_valid(cert, self.not_valid_before))
     # Right after the valid range
     self.assertFalse(cron.is_cert_valid(cert, self.not_valid_after))
+    # A missing cert
+    self.assertFalse(cron.is_cert_valid(None, self.not_valid_before))
 
 
   def test_need_renew(self):
@@ -97,6 +152,62 @@ class TestCron(unittest.TestCase):
     self.assertTrue(cron.need_renew(cert, 30, now=self.not_valid_before))
     # After the valid range
     self.assertTrue(cron.need_renew(cert, 30, now=self.not_valid_after))
+
+  def test_read_config(self):
+    config = cron.read_config(self.config_file)
+
+  @mock.patch('cron.call_acme_tiny', autospec=True)
+  def test_issue_cert_success(self, mock_cat):
+    mock_cat.return_value = 'TEST CERT'
+    domain = domains_pb2.Domain()
+    cert_file = os.path.join(self.tempdir, 'new_cert.crt')
+    domain_text = """\
+        mode: STAGING
+        csr_path: "test_request.csr"
+        private_key_path: "test_private.key"
+        cert_path: "{cert_path}"
+        acme_challenge_path: "test_acme_dir"
+    """.format(cert_path=cert_file)
+
+    protobuf.text_format.Merge(domain_text, domain)
+
+    self.assertFalse(os.path.isfile(cert_file))
+    res = cron.issue_cert(domain, 'test_account.key', 'https://test_staging',
+                          'https://test_prod', self.not_valid_after)
+    self.assertTrue(res)
+    mock_cat.assert_called_once_with([
+      '--account-key', 'test_account.key',
+      '--csr', 'test_request.csr',
+      '--acme-dir', 'test_acme_dir',
+      '--ca', 'https://test_staging'])
+    with open(cert_file) as f:
+      self.assertEqual(f.read(), 'TEST CERT')
+
+  @mock.patch('cron.call_acme_tiny', autospec=True)
+  def test_issue_cert_failure(self, mock_cat):
+    mock_cat.return_value = None
+    domain = domains_pb2.Domain()
+    cert_file = os.path.join(self.tempdir, 'new_cert.crt')
+    domain_text = """\
+        mode: PRODUCTION
+        csr_path: "test_request.csr"
+        private_key_path: "test_private.key"
+        cert_path: "{cert_path}"
+        acme_challenge_path: "test_acme_dir"
+    """.format(cert_path=cert_file)
+
+    protobuf.text_format.Merge(domain_text, domain)
+
+    self.assertFalse(os.path.isfile(cert_file))
+    res = cron.issue_cert(domain, 'test_account.key', 'https://test_staging',
+                          'https://test_prod', self.not_valid_after)
+    self.assertFalse(res)
+    mock_cat.assert_called_once_with([
+      '--account-key', 'test_account.key',
+      '--csr', 'test_request.csr',
+      '--acme-dir', 'test_acme_dir',
+      '--ca', 'https://test_prod'])
+    self.assertFalse(os.path.isfile(cert_file))
 
 
 if __name__ == '__main__':

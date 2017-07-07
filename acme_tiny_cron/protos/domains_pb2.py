@@ -19,7 +19,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='acme_tiny_cron/protos/domains.proto',
   package='acme_tiny_cron',
   syntax='proto3',
-  serialized_pb=_b('\n#acme_tiny_cron/protos/domains.proto\x12\x0e\x61\x63me_tiny_cron\"d\n\x07\x44omains\x12&\n\x06\x64omain\x18\x01 \x03(\x0b\x32\x16.acme_tiny_cron.Domain\x12\x16\n\x0estaging_server\x18\x02 \x01(\t\x12\x19\n\x11production_server\x18\x03 \x01(\t\"\xcb\x01\n\x06\x44omain\x12\x0c\n\x04name\x18\x01 \x03(\t\x12\x10\n\x08\x63sr_path\x18\x02 \x01(\t\x12\x18\n\x10private_key_path\x18\x03 \x01(\t\x12\x11\n\tcert_path\x18\x04 \x01(\t\x12$\n\x1crenew_days_before_expiration\x18\x05 \x01(\x03\x12)\n\x04mode\x18\x06 \x01(\x0e\x32\x1b.acme_tiny_cron.Domain.Mode\"#\n\x04Mode\x12\x0e\n\nPRODUCTION\x10\x00\x12\x0b\n\x07STAGING\x10\x01\x62\x06proto3')
+  serialized_pb=_b('\n#acme_tiny_cron/protos/domains.proto\x12\x0e\x61\x63me_tiny_cron\"\x98\x01\n\x07\x44omains\x12&\n\x06\x64omain\x18\x01 \x03(\x0b\x32\x16.acme_tiny_cron.Domain\x12\x16\n\x0estaging_server\x18\x02 \x01(\t\x12\x19\n\x11production_server\x18\x03 \x01(\t\x12\x10\n\x08log_path\x18\x04 \x01(\t\x12 \n\x18\x61\x63\x63ount_private_key_path\x18\x05 \x01(\t\"\xe8\x01\n\x06\x44omain\x12\x0c\n\x04name\x18\x01 \x03(\t\x12\x10\n\x08\x63sr_path\x18\x02 \x01(\t\x12\x18\n\x10private_key_path\x18\x03 \x01(\t\x12\x11\n\tcert_path\x18\x04 \x01(\t\x12$\n\x1crenew_days_before_expiration\x18\x05 \x01(\x03\x12)\n\x04mode\x18\x06 \x01(\x0e\x32\x1b.acme_tiny_cron.Domain.Mode\x12\x1b\n\x13\x61\x63me_challenge_path\x18\x07 \x01(\t\"#\n\x04Mode\x12\x0e\n\nPRODUCTION\x10\x00\x12\x0b\n\x07STAGING\x10\x01\x62\x06proto3')
 )
 
 
@@ -41,8 +41,8 @@ _DOMAIN_MODE = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   options=None,
-  serialized_start=326,
-  serialized_end=361,
+  serialized_start=408,
+  serialized_end=443,
 )
 _sym_db.RegisterEnumDescriptor(_DOMAIN_MODE)
 
@@ -75,6 +75,20 @@ _DOMAINS = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
+    _descriptor.FieldDescriptor(
+      name='log_path', full_name='acme_tiny_cron.Domains.log_path', index=3,
+      number=4, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='account_private_key_path', full_name='acme_tiny_cron.Domains.account_private_key_path', index=4,
+      number=5, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
   ],
   extensions=[
   ],
@@ -87,8 +101,8 @@ _DOMAINS = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=55,
-  serialized_end=155,
+  serialized_start=56,
+  serialized_end=208,
 )
 
 
@@ -141,6 +155,13 @@ _DOMAIN = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
+    _descriptor.FieldDescriptor(
+      name='acme_challenge_path', full_name='acme_tiny_cron.Domain.acme_challenge_path', index=6,
+      number=7, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
   ],
   extensions=[
   ],
@@ -154,8 +175,8 @@ _DOMAIN = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=158,
-  serialized_end=361,
+  serialized_start=211,
+  serialized_end=443,
 )
 
 _DOMAINS.fields_by_name['domain'].message_type = _DOMAIN
