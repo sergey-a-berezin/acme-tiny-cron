@@ -177,7 +177,7 @@ class TestCron(unittest.TestCase):
 
   @mock.patch('acme_tiny_cron.cron.call_acme_tiny', autospec=True)
   def test_issue_cert_success(self, mock_cat):
-    mock_cat.return_value = 'TEST CERT'
+    mock_cat.return_value = b'TEST CERT'
     cert_file = os.path.join(self.tempdir, 'new_cert.crt')
     domain = get_domain_proto(cert_path=cert_file, mode='STAGING')
 
@@ -212,7 +212,7 @@ class TestCron(unittest.TestCase):
 
   @mock.patch('acme_tiny_cron.cron.call_acme_tiny', autospec=True)
   def test_process_cert_up_to_date(self, mock_cat):
-    mock_cat.return_value = 'NEW CERT'
+    mock_cat.return_value = b'NEW CERT'
     domain = get_domain_proto(cert_path=self.cert_file, mode='PRODUCTION')
     # Too early to renew.
     self.assertFalse(cron.process_cert(
@@ -231,7 +231,7 @@ class TestCron(unittest.TestCase):
 
   @mock.patch('acme_tiny_cron.cron.call_acme_tiny', autospec=True)
   def test_process_cert_renew_success(self, mock_cat):
-    mock_cat.return_value = 'NEW CERT'
+    mock_cat.return_value = b'NEW CERT'
     domain = get_domain_proto(cert_path=self.cert_file, mode='PRODUCTION')
 
     self.assertTrue(cron.process_cert(
@@ -276,7 +276,7 @@ class TestCron(unittest.TestCase):
         get_domain_text(cert_path=self.cert_file, mode='PRODUCTION', days=10),
         get_domain_text(cert_path=self.cert_file, mode='STAGING'),
     ]))
-    mock_cat.side_effect = ['TEST CERT', 'SHOULD NOT BE USED']
+    mock_cat.side_effect = [b'TEST CERT', b'SHOULD NOT BE USED']
     # Expect only STAGING cert to be renewed (default 30 days before expiration).
     self.assertTrue(cron.process_certs(
         config, add_time(self.not_valid_after, days=-29)))
