@@ -24,7 +24,7 @@ import subprocess
 import sys
 
 import acme_tiny
-from google import protobuf
+from google.protobuf import text_format
 
 from .protos import domains_pb2
 
@@ -83,7 +83,7 @@ def need_renew(cert, days_to_renew, now):
 def read_config(config_path):
   config = domains_pb2.Domains()
   with open(config_path) as f:
-    protobuf.text_format.Merge(f.read(), config)
+    text_format.Merge(f.read(), config)
   return config
 
 

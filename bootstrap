@@ -62,7 +62,9 @@ function setup_env3 {
 	if [ -z "$PYTHON3" ]; then
 	    echo "  WARNING: Couldn't find Python 3 installation."
 	else
-	    "$PYTHON3" -m venv env3
+	    # Some Ubuntu systems have ensurepip disabled. Work around those.
+	    "$PYTHON3" -m venv env3 --without-pip --system-site-packages
+	    env3/bin/python -m pip install --upgrade pip
 	fi
     else
 	echo "Reusing the existing env3"
