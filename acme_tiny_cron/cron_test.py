@@ -21,13 +21,18 @@ except ImportError:  # pragma3: no cover
   import mock
 import os
 import shutil
+import sys
 import tempfile
 import unittest
 
 from google import protobuf
 
-import cron
-from protos import domains_pb2
+# Need to load the top-level module to enable relative imports in cron.
+ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, ROOT_DIR)
+
+from acme_tiny_cron import cron
+from acme_tiny_cron.protos import domains_pb2
 
 
 # A self-signed test certificate for `snakeoil.com` valid from
@@ -83,6 +88,7 @@ def get_domain_text(cert_path='/path/to/cert.crt', mode='STAGING', days=None):
   if days:
     days_to_renew = 'renew_days_before_expiration: {}'.format(days)
   domain_text = """\
+      name: "test.domain"
       mode: {mode}
       csr_path: "test_request.csr"
       private_key_path: "test_private.key"
@@ -169,7 +175,7 @@ class TestCron(unittest.TestCase):
       f.write(get_config_text([get_domain_text(), get_domain_text(mode='PRODUCTION')]))
     config = cron.read_config(config_file)
 
-  @mock.patch('cron.call_acme_tiny', autospec=True)
+  @mock.patch('acme_tiny_cron.cron.call_acme_tiny', autospec=True)
   def test_issue_cert_success(self, mock_cat):
     mock_cat.return_value = 'TEST CERT'
     cert_file = os.path.join(self.tempdir, 'new_cert.crt')
@@ -187,7 +193,7 @@ class TestCron(unittest.TestCase):
     with open(cert_file) as f:
       self.assertEqual(f.read(), 'TEST CERT')
 
-  @mock.patch('cron.call_acme_tiny', autospec=True)
+  @mock.patch('acme_tiny_cron.cron.call_acme_tiny', autospec=True)
   def test_issue_cert_failure(self, mock_cat):
     mock_cat.return_value = None
     cert_file = os.path.join(self.tempdir, 'new_cert.crt')
@@ -204,8 +210,8 @@ class TestCron(unittest.TestCase):
       '--ca', 'https://test_prod'])
     self.assertFalse(os.path.isfile(cert_file))
 
-  @mock.patch('cron.call_acme_tiny', autospec=True)
-  def test_process_cert(self, mock_cat):
+  @mock.patch('acme_tiny_cron.cron.call_acme_tiny', autospec=True)
+  def test_process_cert_up_to_date(self, mock_cat):
     mock_cat.return_value = 'NEW CERT'
     domain = get_domain_proto(cert_path=self.cert_file, mode='PRODUCTION')
     # Too early to renew.
@@ -223,7 +229,11 @@ class TestCron(unittest.TestCase):
 
     self.assertEqual(mock_cat.call_count, 0)
 
-    # Successfully renews.
+  @mock.patch('acme_tiny_cron.cron.call_acme_tiny', autospec=True)
+  def test_process_cert_renew_success(self, mock_cat):
+    mock_cat.return_value = 'NEW CERT'
+    domain = get_domain_proto(cert_path=self.cert_file, mode='PRODUCTION')
+
     self.assertTrue(cron.process_cert(
         domain, 'test_account.key', 'test_staging', 'test_prod', self.not_valid_after))
     mock_cat.assert_called_once_with([
@@ -235,8 +245,23 @@ class TestCron(unittest.TestCase):
       cert = f.read()
     self.assertEqual(cert, 'NEW CERT')
 
+  @mock.patch('acme_tiny_cron.cron.call_acme_tiny', autospec=True)
+  def test_process_cert_renew_failure(self, mock_cat):
+    mock_cat.return_value = None
+    domain = get_domain_proto(cert_path=self.cert_file, mode='PRODUCTION')
 
-  @mock.patch('cron.call_acme_tiny', autospec=True)
+    self.assertFalse(cron.process_cert(
+        domain, 'test_account.key', 'test_staging', 'test_prod', self.not_valid_after))
+    mock_cat.assert_called_once_with([
+      '--account-key', 'test_account.key',
+      '--csr', 'test_request.csr',
+      '--acme-dir', 'test_acme_dir',
+      '--ca', 'test_prod'])
+    with open(self.cert_file) as f:
+      cert = f.read()
+    self.assertEqual(cert, TEST_CERT)
+
+  @mock.patch('acme_tiny_cron.cron.call_acme_tiny', autospec=True)
   def test_process_certs_up_to_date(self, mock_cat):
     config = get_config_proto(get_config_text([
         get_domain_text(cert_path=self.cert_file, mode='PRODUCTION', days=10),
@@ -245,7 +270,7 @@ class TestCron(unittest.TestCase):
     self.assertFalse(cron.process_certs(config, add_time(self.not_valid_before, days=1)))
     self.assertEqual(mock_cat.call_count, 0)
 
-  @mock.patch('cron.call_acme_tiny', autospec=True)
+  @mock.patch('acme_tiny_cron.cron.call_acme_tiny', autospec=True)
   def test_process_certs_renew(self, mock_cat):
     config = get_config_proto(get_config_text([
         get_domain_text(cert_path=self.cert_file, mode='PRODUCTION', days=10),

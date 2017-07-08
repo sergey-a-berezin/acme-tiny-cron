@@ -26,7 +26,7 @@ import sys
 import acme_tiny
 from google import protobuf
 
-from protos import domains_pb2
+from .protos import domains_pb2
 
 
 DEFAULT_DAYS_TO_RENEW = 30
@@ -94,7 +94,7 @@ def call_acme_tiny(args):  # pragma: no cover
   # acme-tiny returns the certificate on stdout, and logs on stderr.
   cert, logs = p.communicate()
   for line in logs.splitlines():
-    logging.info('acme-tiny: %s', line)
+    logging.info('acme-tiny: %s', line.decode('utf-8'))
   if p.returncode != 0:
     return None
   return cert
@@ -124,9 +124,12 @@ def process_cert(domain, account_key, staging_server, prod_server, now):
   days_to_renew = domain.renew_days_before_expiration
   if not days_to_renew:
     days_to_renew = DEFAULT_DAYS_TO_RENEW
-  if need_renew(read_cert(domain.cert_path), days_to_renew, now):
-    return issue_cert(domain, account_key, staging_server, prod_server, now)
-  return False
+  if not need_renew(read_cert(domain.cert_path), days_to_renew, now):
+    return False
+  if not issue_cert(domain, account_key, staging_server, prod_server, now):
+    logging.error('Failed to issue certificate for %s', domain.name[0])
+    return False
+  return True
 
 
 def process_certs(config, now):
@@ -144,10 +147,8 @@ def process_certs(config, now):
     if process_cert(domain, config.account_private_key_path,
                     config.staging_server, config.production_server, now):
       updated_count += 1
-  if updated_count:
-    logging.info('Updated %d certificates', updated_count)
-  else:
-    logging.info('All %s certificates are up-to-date.', len(config.domain))
+  logging.info('Updated %d certificates out of %d total.',
+               updated_count, len(config.domain))
   return updated_count > 0
 
 
