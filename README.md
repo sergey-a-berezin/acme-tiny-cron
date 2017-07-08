@@ -86,9 +86,9 @@ configuration for two domains:
 // The schema for this config file is at
 // https://github.com/sergey-a-berezin/acme-tiny-cron/blob/master/acme_tiny_cron/protos/domains.proto
 
-staging_server:                   "https://acme-staging.api.letsencrypt.org/directory"
-production_server:              "https://acme-staging.api.letsencrypt.org/directory"
-log_path:                            "/var/log/acme/acme_tiny_cron.log"
+staging_server:           "https://acme-staging.api.letsencrypt.org"
+production_server:        "https://acme-v01.api.letsencrypt.org"
+log_path:                 "/var/log/acme/acme_tiny_cron.log"
 account_private_key_path: "/home/ssl-auto/private/my_letsencrypt_private.key"
 
 domain: {

@@ -27,8 +27,8 @@ INSTALL_REQUIRES = [
 def pip_install(package):
     p = subprocess.Popen(['pip', 'install', package], stdout=subprocess.PIPE)
     out, err = p.communicate()
-    for line in out.split('\n'):
-        print(line)
+    for line in out.splitlines():
+        print(line.decode('utf-8'))
 
 
 # For some reason, on Mac OS X `./setup.py install` wants to build

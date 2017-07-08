@@ -12,4 +12,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cron import run  # pragma: no cover
+from .cron import run

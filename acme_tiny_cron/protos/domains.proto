@@ -21,9 +21,9 @@ package acme_tiny_cron;
 message Domains {
   // Domain configurations.
   repeated Domain domain = 1;
-  // Staging ACME server, e.g. "https://acme-staging.api.letsencrypt.org/directory"
+  // Staging ACME server, e.g. "https://acme-staging.api.letsencrypt.org"
   string staging_server = 2;
-  // Production ACME server, e.g. "https://acme-v01.api.letsencrypt.org/directory"
+  // Production ACME server, e.g. "https://acme-v01.api.letsencrypt.org"
   string production_server = 3;
   // Absolute path to log prefix, e.g. "/var/logs/acme/acme_tiny_cron.log"
   string log_path = 4;
@@ -40,7 +40,6 @@ message Domain {
     STAGING = 1;
   }
   // Common names, such as example.com, www.example.com.
-  // Not used, for information only.
   repeated string name = 1;
   // Absolute path to the CSR file, e.g.:
   // "/home/ssl-auto/certs/example.com/request.csr".  This file is
