@@ -18,8 +18,10 @@ import argparse
 from cryptography import x509
 from cryptography.hazmat.backends import default_backend
 import datetime
+import errno
 import logging
 import logging.handlers
+import os
 import subprocess
 import sys
 
@@ -107,6 +109,15 @@ def call_acme_tiny(args):  # pragma: no cover
   return cert
 
 
+def mkdir_p(path):
+  try:
+    os.makedirs(path)
+  except OSError as exc:  # Python >2.5
+    if exc.errno == errno.EEXIST and os.path.isdir(path):
+      return
+    raise  # pragma: no cover
+
+
 def issue_cert(domain, account_key, staging_server, prod_server, now):
   """Returns True if acme-tiny call succeeds."""
   if domain.mode == domains_pb2.Domain.PRODUCTION:
@@ -121,6 +132,7 @@ def issue_cert(domain, account_key, staging_server, prod_server, now):
   ]
   cert = call_acme_tiny(args)
   if cert:
+    mkdir_p(os.path.dirname(domain.cert_path))
     with open(domain.cert_path, 'w') as f:
       f.write(cert.decode('utf-8'))
     return True

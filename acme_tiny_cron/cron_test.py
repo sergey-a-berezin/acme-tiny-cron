@@ -178,7 +178,8 @@ class TestCron(unittest.TestCase):
   @mock.patch('acme_tiny_cron.cron.call_acme_tiny', autospec=True)
   def test_issue_cert_success(self, mock_cat):
     mock_cat.return_value = b'TEST CERT'
-    cert_file = os.path.join(self.tempdir, 'new_cert.crt')
+    # Test a deep non-existent path.
+    cert_file = os.path.join(self.tempdir, 'deep', 'path', 'to', 'new_cert.crt')
     domain = get_domain_proto(cert_path=cert_file, mode='STAGING')
 
     self.assertFalse(os.path.isfile(cert_file))
