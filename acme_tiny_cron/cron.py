@@ -131,11 +131,17 @@ def process_cert(domain, account_key, staging_server, prod_server, now):
   days_to_renew = domain.renew_days_before_expiration
   if not days_to_renew:
     days_to_renew = DEFAULT_DAYS_TO_RENEW
+  names = '[{}]'.format(', '.join(domain.name))
+  logging.info('Processing certificate for %s: %s', names, domain.cert_path)
   if not need_renew(read_cert(domain.cert_path), days_to_renew, now):
+    logging.info('Certificate %s is valid for more than %d days, skipping.',
+                 domain.cert_path, days_to_renew)
     return False
+  logging.info('Attempting to issue certificate for %s: %s', names, domain.cert_path)
   if not issue_cert(domain, account_key, staging_server, prod_server, now):
-    logging.error('Failed to issue certificate for %s', domain.name[0])
+    logging.error('Failed to issue certificate for %s: %s', names, domain.cert_path)
     return False
+  logging.info('Successfully issued certificate for %s: %s', names, domain.cert_path)
   return True
 
 
