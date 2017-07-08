@@ -89,6 +89,13 @@ def read_config(config_path):
 
 # Separate minimal function to mock in tests.
 def call_acme_tiny(args):  # pragma: no cover
+  """Low-level call to acme-tiny.
+
+  Args:
+    args: (list of string) CLI arguments to pass to acme-tiny
+  Returns:
+    certificate (bytes) or None.
+  """
   p = subprocess.Popen(['acme-tiny'] + args,
                        stdout=subprocess.PIPE, stderr=subprocess.PIPE)
   # acme-tiny returns the certificate on stdout, and logs on stderr.
@@ -115,7 +122,7 @@ def issue_cert(domain, account_key, staging_server, prod_server, now):
   cert = call_acme_tiny(args)
   if cert:
     with open(domain.cert_path, 'w') as f:
-      f.write(cert)
+      f.write(cert.decode('utf-8'))
     return True
   return False
 
