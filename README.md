@@ -177,7 +177,7 @@ Add the following to your root crontab:
 crontab <<EOF
 SHELL=/bin/sh
 
-0 0 * * *    sudo -u -H ssl-auto /home/ssl-auto/ssl/bin/acme-tiny-cron /home/ssl-auto/acme-tiny-cron.cfg && service apache2 restart
+0 0 * * *    sudo -u -H ssl-auto /home/ssl-auto/ssl/bin/acme-tiny-cron /home/ssl-auto/acme-tiny-cron.cfg && service apache2 reload
 EOF
 ```
 
