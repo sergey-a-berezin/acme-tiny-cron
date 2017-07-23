@@ -123,7 +123,7 @@ your server runs under `www-data` user, and `acme_tiny_cron` runs
 under `ssl-auto`:
 
 ```
-sudo mkdir /var/www/<domain>/.well-known   # do this for every domain
+sudo mkdir -p /var/www/<domain>/.well-known/acme-challenge   # do this for every domain
 sudo chown -R www-data /var/www/*/.well-known
 sudo chgrp -R ssl-auto /var/www/*/.well-known
 sudo chmod g+w -R /var/www/*/.well-known
