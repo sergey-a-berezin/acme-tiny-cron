@@ -44,7 +44,7 @@ class Install(install):
 
 setup(
     name='acme-tiny-cron',
-    version='0.1',
+    version='0.2',
     description='Cron job script wrapper for acme-tiny',
     long_description='Cron job script wrapper for acme-tiny',
     classifiers=[
