@@ -20,7 +20,7 @@ import subprocess
 # When updating versions, also update pip2.deps and pip3.deps.
 INSTALL_REQUIRES = [
     'acme-tiny==4.0.4',
-    'cryptography=2.2.2',
+    'cryptography==2.2.2',
     'protobuf==3.5.2.post1',
 ]
 
