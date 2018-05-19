@@ -86,8 +86,8 @@ configuration for two domains:
 // The schema for this config file is at
 // https://github.com/sergey-a-berezin/acme-tiny-cron/blob/master/acme_tiny_cron/protos/domains.proto
 
-staging_server:           "https://acme-staging.api.letsencrypt.org"
-production_server:        "https://acme-v01.api.letsencrypt.org"
+staging_server:           "https://acme-staging-v02.api.letsencrypt.org"
+production_server:        "https://acme-v02.api.letsencrypt.org"
 log_path:                 "/var/log/acme/acme_tiny_cron.log"
 account_private_key_path: "/home/ssl-auto/private/my_letsencrypt_private.key"
 
@@ -113,6 +113,12 @@ domain: {
   acme_challenge_path: "/var/www/my-real-domain.com/.well-known/acme-challenge"
 }
 ```
+
+Note, that [acme-tiny] tool switched to ACME version 2 as of
+[Jan 14, 2018](https://github.com/diafygi/acme-tiny/commit/bb248e00125728e6f15806d6408ebd9ac5251cbf),
+requiring the use of `*-v02.api.letsencrypt.org` URLs. If your certificate
+renewal fails with `KeyError: 'newAccount'`, you are likely still using `*-v01`
+versions and need to upgrade.
 
 ### Setup file permissions
 
