@@ -1,3 +1,4 @@
+# When updating versions, also update setup.py.
 acme-tiny==4.0.4
 coverage==4.5.1
 cryptography==2.2.2
