@@ -1,5 +1,5 @@
 # When updating versions, also update setup.py.
-acme-tiny==4.0.4
-coverage==4.5.1
-cryptography==2.2.2
-protobuf==3.5.2.post1
+acme-tiny==4.1.0
+coverage==4.5.4
+cryptography==2.7
+protobuf==3.9.1

@@ -19,9 +19,9 @@ import subprocess
 
 # When updating versions, also update pip2.deps and pip3.deps.
 INSTALL_REQUIRES = [
-    'acme-tiny==4.0.4',
-    'cryptography==2.2.2',
-    'protobuf==3.5.2.post1',
+    'acme-tiny==4.1.0',
+    'cryptography==2.7',
+    'protobuf==3.9.1',
 ]
 
 
@@ -45,7 +45,7 @@ class Install(install):
 
 setup(
     name='acme-tiny-cron',
-    version='0.2',
+    version='0.3',
     description='Cron job script wrapper for acme-tiny',
     long_description='Cron job script wrapper for acme-tiny',
     classifiers=[
