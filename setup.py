@@ -21,7 +21,7 @@ import subprocess
 INSTALL_REQUIRES = [
     'acme-tiny==4.1.0',
     'cryptography==2.7',
-    'protobuf==3.9.1',
+    'protobuf==3.18.3',
 ]
 
 
